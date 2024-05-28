@@ -32,7 +32,7 @@ public class ChatClient {
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String message;
                 while ((message = in.readLine()) != null) {
-                    System.out.println("Server: " + message);
+                    System.out.println(message);
                 }
             } catch (IOException e) {
                 System.out.println("Error reading from server: " + e.getMessage());
