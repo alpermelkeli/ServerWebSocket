@@ -2,11 +2,13 @@ import java.io.*;
 import java.net.*;
 
 public class ChatClient {
-    private static final String SERVER_ADDRESS = "34.27.179.203";
+    private static final String SERVER_ADDRESS = "localhost";
     private static final int SERVER_PORT = 5050;
 
     public static void main(String[] args) throws IOException {
+
         Socket socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
+
         new Thread(new Reader(socket)).start();
 
         PrintWriter out = new PrintWriter(socket.getOutputStream(), true);

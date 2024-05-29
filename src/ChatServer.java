@@ -7,23 +7,22 @@ public class ChatServer {
     private static Set<PrintWriter> clientWriters = new HashSet<>();
 
     public static void main(String[] args) throws IOException {
-        System.out.println("Chat server started...");
-        ServerSocket serverSocket = new ServerSocket(PORT);
 
-        // Başlangıçta mesajları alıp bağlı kullanıcılara gönder
+        System.out.println("Chat server started...");
+
+        ServerSocket serverSocket = new ServerSocket(PORT);
 
         while (true) {
             new ClientHandler(serverSocket.accept()).start();
-            sendInitialMessages();
         }
     }
 
-    private static void sendInitialMessages() {
+    private static void sendInitialMessages(PrintWriter writer) {
         MessageDAO messageDAO = new MessageDAO();
         List<String> messages = messageDAO.getMessages(); // Kaydedilen mesajları al
 
         for (String message : messages) {
-            broadcastMessage(message); // Her bağlı kullanıcıya mesajı gönder
+            writer.println(message); // Yeni bağlanan kullanıcıya mesajı gönder
         }
     }
 
@@ -46,19 +45,43 @@ public class ChatServer {
 
         public void run() {
             try {
+                UserDAO userDAO = new UserDAO();
+
                 MessageDAO messageDAO = new MessageDAO();
+
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
                 out = new PrintWriter(socket.getOutputStream(), true);
+
+                // Kullanıcı doğrulaması
+                out.println("Enter username:");
+
+                String username = in.readLine();
+
+                out.println("Enter password:");
+
+                String password = in.readLine();
+
+                if (!userDAO.authenticateUser(username, password)) {
+                    out.println("Authentication failed. Connection closing.");
+                    socket.close();
+                    return;
+                }
+
+                out.println("Authentication successful. You can start chatting.");
+
+                sendInitialMessages(out);
+
                 synchronized (clientWriters) {
                     clientWriters.add(out);
                 }
 
                 String message;
-                while ((message = in.readLine()) != null) {
-                    System.out.println("Received: " + message);
-                    messageDAO.saveMessage("Server", message);
 
-                    broadcastMessage(message); // Mesajı diğer kullanıcılara gönder
+                while ((message = in.readLine()) != null) {
+                    System.out.printf("Received(%s): " + message+"\n", username);
+                    messageDAO.saveMessage(username, message); // Mesajı veritabanına kaydet
+                    broadcastMessage(username + ": " + message); // Mesajı diğer kullanıcılara gönder
                 }
             } catch (IOException e) {
                 System.out.println("Error handling client: " + e.getMessage());
@@ -74,4 +97,5 @@ public class ChatServer {
             }
         }
     }
+
 }
